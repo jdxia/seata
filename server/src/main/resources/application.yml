@@ -17,10 +17,17 @@
 
 server:
   port: 7091
+  shutdown: graceful
 
 spring:
   application:
     name: seata-server
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+  main:
+    allow-circular-references: true
+    banner-mode: off
 
 logging:
   config: classpath:logback-spring.xml
@@ -38,17 +45,111 @@ console:
     username: seata
     password: seata
 seata:
+  # 配置管理, 线上一般用 nacos
   config:
     # support: nacos, consul, apollo, zk, etcd3
+    # file 意思是 当前项目从 application.yml 读取配置，不会额外生成一个配置文件
     type: file
+    # Nacos 配置中心示例：将上面的 type 改为 nacos，并取消下面 nacos 块的注释。
+    # 此处负责读取事务配置；服务注册需单独设置下面的 registry.type 和 registry.nacos。
+    # nacos:
+    #   server-addr: 127.0.0.1:8848 # 替换为实际地址；多个地址用英文逗号分隔。
+    #   namespace: "" # 留空使用 public；自定义命名空间填写 ID，不是名称。
+    #   group: SEATA_GROUP # 配置所在的分组，需与 Nacos 控制台一致。
+    #   data-id: seataServer.properties # 显式指定配置文件名，需与 Nacos 控制台一致。
+    #   context-path: "" # 留空使用 Nacos 客户端默认路径；自定义部署时填写实际路径。
+    #   username: ${NACOS_USERNAME:} # 开启 Nacos 鉴权时，通过环境变量提供账号和密码。
+    #   password: ${NACOS_PASSWORD:}
+    #
+    # 启用步骤：
+    # 1. 在 Nacos 控制台选择上面的 namespace，创建配置：
+    #    Data ID = seataServer.properties，Group = SEATA_GROUP，配置格式 = Properties。
+    # 2. 发布以下内容作为本地开发示例；远端配置使用属性名，不加 seata. 前缀：
+    #    store.mode=file
+    #    store.file.dir=sessionStore
+    #    store.file.flushDiskMode=async
+    #    server.recovery.committingRetryPeriod=1000
+    #    server.recovery.asynCommittingRetryPeriod=1000
+    #    server.recovery.rollbackingRetryPeriod=1000
+    #    server.recovery.timeoutRetryPeriod=1000
+    # 3. 如客户端也读取这份配置，可增加以下映射；事务分组名按客户端实际配置填写，
+    #    映射值需与 registry.nacos.cluster 一致：
+    #    service.vgroupMapping.default_tx_group=default
+    # 4. 再修改本地 type、启用 nacos 块并重启 Seata；开启鉴权时先设置上述环境变量。
+    # 完整配置项参考 script/config-center/config.txt，按实际存储模式选取，勿直接照搬全部内容。
+    # 生产使用 DB 存储时，先准备数据库和表，将远端 store.mode 改为 db 并配置 store.db.*。
+    # DB 配置值可参考下方 store 示例，远端属性名以 script/config-center/config.txt 为准。
+  # 服务注册与发现, 线上一般用 nacos
   registry:
     # support: nacos, eureka, redis, zk, consul, etcd3, sofa
+    # file的意思是 客户端从配置中读取固定的服务端地址，不会生成或维护一份磁盘注册表
     type: file
+    # Nacos 示例：将上面的 type 改为 nacos，并取消下面 nacos 块的注释。
+    # nacos:
+    #   application: seata-server # 客户端需使用相同的服务名、group 和 namespace。
+    #   server-addr: 127.0.0.1:8848 # 替换为实际地址；多个地址用英文逗号分隔。
+    #   group: SEATA_GROUP
+    #   namespace: "" # 留空使用 public；自定义命名空间填写 ID，不是名称。
+    #   cluster: default # 客户端 service.vgroupMapping.<事务分组> 的值需与此一致。
+    #   username: ${NACOS_USERNAME:} # 开启 Nacos 鉴权时，通过环境变量提供账号和密码。
+    #   password: ${NACOS_PASSWORD:}
+  # 事务数据存储, 线上一般用 db
   store:
     # support: file 、 db 、 redis 、 raft
     mode: file
-  #  server:
-  #    service-port: 8091 #If not configured, the default is '${server.port} + 1000'
+    # 以下示例按需取消注释；切换模式时修改上面的 mode，不要重复定义 store。
+    # 未单独设置 session.mode、lock.mode 时，两者跟随 store.mode；切换时检查启动参数和环境变量是否覆盖。
+
+    # 1. File：当前生效的模式，适合本地开发；取消注释可显式设置文件目录和刷盘方式。
+    # <工作目录>/sessionStore/8091/root.data
+    # file:
+    #   dir: sessionStore
+    #   flush-disk-mode: async # 异步刷盘存在故障丢失窗口；可改为 sync，但仍不支持跨 TC 接管。
+
+    # 2. DB：将 mode 改为 db，并取消下面 db 块的注释。
+    # 先创建 seata 数据库，再执行 script/server/db/mysql.sql；多个 TC 使用同一套数据库。
+    # db:
+    #   datasource: druid
+    #   db-type: mysql
+    #   driver-class-name: com.mysql.jdbc.Driver # 与项目示例一致；MySQL 8 驱动使用 com.mysql.cj.jdbc.Driver。
+    #   url: jdbc:mysql://127.0.0.1:3306/seata?rewriteBatchedStatements=true
+    #   user: ${SEATA_DB_USER:seata}
+    #   password: ${SEATA_DB_PASSWORD}
+    #   min-conn: 10
+    #   max-conn: 100
+    #   global-table: global_table
+    #   branch-table: branch_table
+    #   lock-table: lock_table
+    #   distributed-lock-table: distributed_lock
+
+    # 3. Redis：将 mode 改为 redis，并取消下面 redis 块的注释；此处演示单实例连接。
+    # 事务记录不是缓存，生产需另行配置 Redis 持久化和高可用，并评估故障切换的数据丢失风险。
+    # redis:
+    #   mode: single
+    #   type: lua
+    #   database: 0
+    #   password: ${SEATA_REDIS_PASSWORD:}
+    #   min-conn: 10
+    #   max-conn: 100
+    #   single:
+    #     host: 127.0.0.1
+    #     port: 6379
+
+    # 4. Raft：将 mode 改为 raft，取消上面 file 块和下面 server 块的注释。
+    # file.dir 用于保存 Raft 日志和快照，应使用固定的持久化目录；刷盘由 server.raft.sync 控制。
+    # 不要单独配置 session.mode、lock.mode；当前版本将 Raft 标记为实验功能。
+  # Raft 示例：3 台不同主机使用同一份成员列表，并保持上面的 registry.type 为 file。
+  # 将地址替换为实际节点 IP；每个节点的通告 IP 必须与成员列表对应。
+  # 客户端需设置 seata.registry.type=raft，seata.registry.raft.server-addr 使用各节点的 HTTP 地址
+  # （示例为 192.168.10.11:7091,192.168.10.12:7091,192.168.10.13:7091），事务分组映射到 default。
+  # server:
+  #   service-port: 8091 # TC 业务端口；默认是顶层 server.port + 1000。
+  #   raft:
+  #     group: default
+  #     server-addr: 192.168.10.11:9091,192.168.10.12:9091,192.168.10.13:9091
+  #     snapshot-interval: 600
+  #     election-timeout-ms: 1000
+  #     sync: true # 同步刷盘，避免为降低延迟而扩大故障丢失窗口。
   security:
     secretKey: SeataSecretKey0c382ef121d778043159209298fd40bf3850a017
     tokenValidityInMilliseconds: 1800000

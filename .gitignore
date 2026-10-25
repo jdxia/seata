@@ -61,3 +61,77 @@ Thumbs.db
 /console/src/main/resources/static/saga-statemachine-designer/
 /console/src/main/resources/static/index.html
 /console/src/main/resources/static/version.json
+
+# Intellij
+out
+**/.idea/
+atlassian-ide-plugin.xml
+
+# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+hs_err_pid*
+replay_pid*
+
+# Maven
+*/target/
+**/target/
+.m2
+
+# Gradle
+.gradle
+/target
+*/target
+classes
+
+# Log file
+logs/
+
+# out
+**/out/
+
+# Mac
+.DS_Store*
+.AppleDouble
+.LSOverride
+
+# others
+*.o
+*.so
+*.dll
+*.exe
+*.7z
+*.dmg
+*.iso
+*.rar
+*.pid
+*.nar
+*.ear
+temp/
+
+# Default ignored files
+/workspace.xml
+
+# OS generated files #
+######################
+ehthumbs.db
+Icon?
+
+# Eclipse specific files/directories
+.settings
+.metadata
+# NetBeans specific files/directories
+.nbattrs
+/.lingma/rules/project_rule.md
+
+.vscode
+.vscode/
+
+.cursor
+.cursor/
+
+.spec-workflow
+download-ripgrep8P6vPu
+.xcodemap
+.serena
+
+.claude/
+.gitnexus
