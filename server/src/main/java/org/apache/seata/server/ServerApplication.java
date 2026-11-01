@@ -25,8 +25,14 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  */
 @SpringBootApplication(scanBasePackages = {"org.apache.seata"})
 public class ServerApplication {
+
     public static void main(String[] args) throws IOException {
+        /**
+         * nacos 是 http://192.168.33.20:8848/nacos
+         */
+
         // run the spring-boot application
         SpringApplication.run(ServerApplication.class, args);
     }
+
 }

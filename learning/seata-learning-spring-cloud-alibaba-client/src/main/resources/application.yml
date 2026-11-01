@@ -1,0 +1,75 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+server:
+  address: 127.0.0.1
+  port: 18082
+  shutdown: graceful
+
+spring:
+  application:
+    name: seata-learning-cloud
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+  main:
+    allow-circular-references: true
+    banner-mode: off
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/seata_learning_cloud?useUnicode=true&characterEncoding=utf-8&useSSL=false&verifyServerCertificate=false&serverTimezone=Asia/Shanghai&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true
+    username: ${DEMO_DB_USERNAME:root}
+    password: ${DEMO_DB_PASSWORD:hello.world123}
+    hikari:
+      minimum-idle: 2
+      maximum-pool-size: 5
+  cloud:
+    openfeign:
+      client:
+        config:
+          default:
+            connect-timeout: 3000
+            read-timeout: 300000
+
+demo:
+  stock-url: ${STOCK_SERVICE_URL:http://127.0.0.1:18081}
+
+seata:
+  application-id: ${spring.application.name}
+  tx-service-group: trade_order_tx_group  # 事务组, 根据这个获取tc服务的cluster名称
+  enable-auto-data-source-proxy: true
+  data-source-proxy-mode: AT
+  config:
+    # 从 Nacos 读取客户端事务配置。
+    type: nacos
+    nacos:
+      server-addr: 192.168.33.20:8848
+      namespace: "seata" # Nacos 命名空间 ID。
+      group: SEATA_GROUP
+      data-id: seata-client-trade.properties
+      username: nacos
+      password: nacos
+  registry:
+    type: nacos
+    nacos:
+      application: seata-server-demo  # 和tc 保持一致, tc 服务在 nacos 中的服务名称
+      server-addr: 192.168.33.20:8848
+      namespace: "seata" # 填写与 TC 相同的命名空间 ID。
+      group: SEATA_GROUP
+      username: nacos
+      password: nacos
+  service:  # 如果nacos已经配置, 这边就没什么用了, 它不能作为远端缺少映射时的自动回退
+    vgroup-mapping:
+      # 键对应 tx-service-group，值对应 TC 的 registry.nacos.cluster。
+      trade_order_tx_group: tradeOrderTxCluster
