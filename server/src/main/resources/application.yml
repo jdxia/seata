@@ -67,6 +67,7 @@ seata:
      username: nacos
      password: nacos
   registry:
+    preferred-networks: "192.168.33.;192.168.1.;10.0."  # 优先选择这个
     # support: nacos, eureka, redis, zk, consul, etcd3, sofa
     # file的意思是 客户端从配置中读取固定的服务端地址，不会生成或维护一份磁盘注册表
     type: nacos

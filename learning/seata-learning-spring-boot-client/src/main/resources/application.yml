@@ -39,6 +39,7 @@ seata:
   application-id: ${spring.application.name}
   tx-service-group: trade_order_tx_group # 事务组, 根据这个获取tc服务的cluster名称
   enable-auto-data-source-proxy: true
+  # AT , XA
   data-source-proxy-mode: AT
   config:
     # 从 Nacos 读取客户端事务配置。
